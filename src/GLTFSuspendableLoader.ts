@@ -8,31 +8,44 @@ import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import * as THREE from 'three';
 
-import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 function deserializeScene(nodes: any[]) {
     const nodeMap = new Map();
 
-    // まずすべてのノードを生成してMapに保存
-    nodes.forEach((node) => {
+    // 1. すべてのノード生成（行列は matrixAutoUpdate=false でセット）
+    nodes.forEach(node => {
         let obj;
         if (node.type === 'Mesh' && node.geometry) {
             const geometry = new THREE.BufferGeometry();
+
             geometry.setAttribute(
                 'position',
                 new THREE.BufferAttribute(new Float32Array(node.geometry.position), 3)
             );
+
             if (node.geometry.normal) {
                 geometry.setAttribute(
                     'normal',
                     new THREE.BufferAttribute(new Float32Array(node.geometry.normal), 3)
                 );
             }
+
             if (node.geometry.uv) {
                 geometry.setAttribute(
                     'uv',
                     new THREE.BufferAttribute(new Float32Array(node.geometry.uv), 2)
                 );
+            }
+
+            if (node.geometry.index) {
+                let indexArray;
+                if (node.geometry.indexType === 'Uint32') {
+                    indexArray = new Uint32Array(node.geometry.index);
+                } else {
+                    indexArray = new Uint16Array(node.geometry.index);
+                }
+                geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
             }
 
             const material = new THREE.MeshStandardMaterial({
@@ -48,31 +61,40 @@ function deserializeScene(nodes: any[]) {
 
         obj.name = node.name;
 
-        // 行列を適用
-        const m = new THREE.Matrix4();
-        m.fromArray(node.matrix);
-        obj.applyMatrix4(m);
+        // 行列セット（applyMatrix4ではなく直接設定）
+        obj.matrix.fromArray(node.matrix);
+        obj.matrixAutoUpdate = false;
 
         nodeMap.set(node.id, obj);
     });
 
-    let root: THREE.Object3D | null = null;
-
-    // 親子関係を復元
-    nodes.forEach((node) => {
+    // 2. 親子関係を復元（親を先にadd）
+    nodes.forEach(node => {
         const obj = nodeMap.get(node.id);
         if (node.parentId !== null) {
             const parent = nodeMap.get(node.parentId);
             if (parent) {
                 parent.add(obj);
+            } else {
+                console.warn(`親ID ${node.parentId} が見つかりません`);
             }
-        } else {
-            // parentId null はルート候補
-            root = obj;
         }
     });
 
-    return root as any
+    // 3. ルートノードを取得（parentId=null のもの）
+    const roots = nodes.filter(node => node.parentId === null).map(node => nodeMap.get(node.id));
+
+    if (roots.length === 1) {
+        return roots[0];
+    } else if (roots.length > 1) {
+        // 複数ルートの場合は新規Object3Dを作ってまとめる
+        const rootObj = new THREE.Object3D();
+        roots.forEach(r => rootObj.add(r));
+        return rootObj;
+    } else {
+        console.warn('ルートノードが見つかりません');
+        return null;
+    }
 }
 
 export class GLTFSuspendableLoader extends GLTFLoader {

@@ -21,12 +21,15 @@ function serializeScene(root) {
 
     if (node.isMesh) {
       const geom = node.geometry;
-      serialized.geometry = {
-        position: geom.getAttribute('position').array.buffer,
-        normal: geom.getAttribute('normal')?.array.buffer,
-        uv: geom.getAttribute('uv')?.array.buffer,
-        vertexCount: geom.getAttribute('position').count,
-      };
+        serialized.geometry = {
+            position: geom.getAttribute('position').array.buffer,
+            normal: geom.getAttribute('normal')?.array.buffer,
+            uv: geom.getAttribute('uv')?.array.buffer,
+            indexType: (geom.index.array instanceof Uint32Array) ? 'Uint32' : 'Uint16',
+            index: geom.index ? geom.index.array.buffer : null,  // 追加
+            vertexCount: geom.getAttribute('position').count,
+            indexCount: geom.index ? geom.index.count : 0,
+        };
 
       const mat = node.material;
       serialized.material = {
