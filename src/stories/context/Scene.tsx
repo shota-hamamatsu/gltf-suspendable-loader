@@ -13,7 +13,7 @@ import { GLTFSuspendableLoader } from "../../GLTFSuspendableLoader";
 
 const DRACO_DECODER_PATH = new URL('../assets/draco/', import.meta.url).href;
 
-const DEFAULT_CAMERA_POSITION: THREE.Vector3 = new THREE.Vector3(0, 10, 10);
+const DEFAULT_CAMERA_POSITION: THREE.Vector3 = new THREE.Vector3(0, 400, 800);
 const DEFAULT_CAMERA_ROTATION: THREE.Euler = new THREE.Euler(
   -0.8700678484298644,
   -0.010699096699409466,
@@ -77,8 +77,7 @@ export const Scene = ({
     return axisHelper;
   });
   const [gridHelper] = useState(() => {
-    const gridHelper = new THREE.GridHelper(100, 100);
-    gridHelper.position.set(0, 0, 0);
+    const gridHelper = new THREE.GridHelper(10, 10);
     return gridHelper;
   });
 
