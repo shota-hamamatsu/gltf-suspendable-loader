@@ -10,91 +10,82 @@ import * as THREE from 'three';
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-function deserializeScene(nodes: any[]) {
-    const nodeMap = new Map();
+const textureMap = new Map();
 
-    // 1. すべてのノード生成（行列は matrixAutoUpdate=false でセット）
-    nodes.forEach(node => {
-        let obj;
-        if (node.type === 'Mesh' && node.geometry) {
-            const geometry = new THREE.BufferGeometry();
+async function createTextureFromBuffer(buffer: ArrayBuffer) {
+    if (!buffer) return null;
+    const blob = new Blob([buffer]);
+    const imageBitmap = await createImageBitmap(blob);
+    const texture = new THREE.Texture(imageBitmap);
+    texture.needsUpdate = true;
+    return texture;
+}
 
+async function deserializeNode(nodeData: any) {
+    let obj;
+    if (nodeData.type === 'Mesh' && nodeData.geometry) {
+        const geometry = new THREE.BufferGeometry();
+
+        geometry.setAttribute(
+            'position',
+            new THREE.BufferAttribute(new Float32Array(nodeData.geometry.position), 3)
+        );
+
+        if (nodeData.geometry.normal) {
             geometry.setAttribute(
-                'position',
-                new THREE.BufferAttribute(new Float32Array(node.geometry.position), 3)
+                'normal',
+                new THREE.BufferAttribute(new Float32Array(nodeData.geometry.normal), 3)
             );
-
-            if (node.geometry.normal) {
-                geometry.setAttribute(
-                    'normal',
-                    new THREE.BufferAttribute(new Float32Array(node.geometry.normal), 3)
-                );
-            }
-
-            if (node.geometry.uv) {
-                geometry.setAttribute(
-                    'uv',
-                    new THREE.BufferAttribute(new Float32Array(node.geometry.uv), 2)
-                );
-            }
-
-            if (node.geometry.index) {
-                let indexArray;
-                if (node.geometry.indexType === 'Uint32') {
-                    indexArray = new Uint32Array(node.geometry.index);
-                } else {
-                    indexArray = new Uint16Array(node.geometry.index);
-                }
-                geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
-            }
-
-            const material = new THREE.MeshStandardMaterial({
-                color: new THREE.Color().fromArray(node.material.color),
-                metalness: node.material.metalness,
-                roughness: node.material.roughness,
-            });
-
-            obj = new THREE.Mesh(geometry, material);
-        } else {
-            obj = new THREE.Object3D();
         }
 
-        obj.name = node.name;
+        if (nodeData.geometry.uv) {
+            geometry.setAttribute(
+                'uv',
+                new THREE.BufferAttribute(new Float32Array(nodeData.geometry.uv), 2)
+            );
+        }
 
-        // 行列セット（applyMatrix4ではなく直接設定）
-        obj.matrix.fromArray(node.matrix);
-        obj.matrixAutoUpdate = false;
-
-        nodeMap.set(node.id, obj);
-    });
-
-    // 2. 親子関係を復元（親を先にadd）
-    nodes.forEach(node => {
-        const obj = nodeMap.get(node.id);
-        if (node.parentId !== null) {
-            const parent = nodeMap.get(node.parentId);
-            if (parent) {
-                parent.add(obj);
+        if (nodeData.geometry.index) {
+            let indexArray;
+            if (nodeData.geometry.indexType === 'Uint32') {
+                indexArray = new Uint32Array(nodeData.geometry.index);
             } else {
-                console.warn(`親ID ${node.parentId} が見つかりません`);
+                indexArray = new Uint16Array(nodeData.geometry.index);
             }
+            geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
         }
-    });
 
-    // 3. ルートノードを取得（parentId=null のもの）
-    const roots = nodes.filter(node => node.parentId === null).map(node => nodeMap.get(node.id));
+        const materialParams = {
+            color: new THREE.Color().fromArray(nodeData.material.color),
+            metalness: nodeData.material.metalness,
+            roughness: nodeData.material.roughness,
+        };
 
-    if (roots.length === 1) {
-        return roots[0];
-    } else if (roots.length > 1) {
-        // 複数ルートの場合は新規Object3Dを作ってまとめる
-        const rootObj = new THREE.Object3D();
-        roots.forEach(r => rootObj.add(r));
-        return rootObj;
+        if (nodeData.material.mapId !== null) {
+            Object.assign(materialParams, {
+                map: textureMap.get(nodeData.material.mapId)
+            });
+        }
+
+        const material = new THREE.MeshStandardMaterial(materialParams);
+        obj = new THREE.Mesh(geometry, material);
     } else {
-        console.warn('ルートノードが見つかりません');
-        return null;
+        obj = new THREE.Object3D();
     }
+
+    obj.name = nodeData.name;
+    obj.matrix.fromArray(nodeData.matrix);
+    obj.matrixAutoUpdate = false;
+
+    // 子ノード再帰復元
+    if (nodeData.children) {
+        for (const childData of nodeData.children) {
+            const childObj = await deserializeNode(childData);
+            obj.add(childObj);
+        }
+    }
+
+    return obj;
 }
 
 export class GLTFSuspendableLoader extends GLTFLoader {
@@ -104,11 +95,11 @@ export class GLTFSuspendableLoader extends GLTFLoader {
     }
     loadSuspendable(
         url: string,
-        onLoad: (model: THREE.Mesh) => void
+        onLoad: (model: THREE.Object3D) => void
     ) {
         // 中断用のSubject
         const cancelSubject = new Subject();
-        const modelLoader = new Observable<{ progress?: number; model?: THREE.Mesh }>((observer) => {
+        const modelLoader = new Observable<{ progress?: number; model?: THREE.Object3D }>((observer) => {
             const worker = new Worker(new URL('./worker/gltfWorker.js', import.meta.url), { type: 'module' });
 
             worker.onmessage = async (event) => {
@@ -117,7 +108,15 @@ export class GLTFSuspendableLoader extends GLTFLoader {
                 if (type === 'progress') {
                     observer.next({ progress: data.loaded / data.total });
                 } else if (type === 'success') {
-                    const nodes = deserializeScene(data.nodes);
+                    // 例：仮にtextureBuffersがdata.textureBuffersとして送信されている場合
+                    if (data.textureBuffers && data.textureBuffers.length > 0) {
+                        // idは送られていないので順番とmapIdは同じと仮定
+                        for (let i = 0; i < data.textureBuffers.length; i++) {
+                            const tex = await createTextureFromBuffer(data.textureBuffers[i]);
+                            textureMap.set(i, tex);
+                        }
+                    }
+                    const nodes = await deserializeNode(data.sceneData);
                     observer.next({ model: nodes });
                     observer.complete();
                     // workerを終了することで完全にロードを中断する
