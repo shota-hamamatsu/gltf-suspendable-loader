@@ -8,7 +8,10 @@ import {
   useMemo,
 } from "react";
 import * as THREE from "three";
-import { SpinCameraControls } from "../../SpinCameraControls";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { GLTFSuspendableLoader } from "../../GLTFSuspendableLoader";
+
+const DRACO_DECODER_PATH = new URL('../assets/draco/', import.meta.url).href;
 
 const DEFAULT_CAMERA_POSITION: THREE.Vector3 = new THREE.Vector3(0, 10, 10);
 const DEFAULT_CAMERA_ROTATION: THREE.Euler = new THREE.Euler(
@@ -21,7 +24,8 @@ export type SceneContextValue = {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer | null;
-  controls: SpinCameraControls;
+  loader: GLTFSuspendableLoader;
+  controls: OrbitControls;
 };
 
 const SceneContext = createContext<SceneContextValue | null>(null);
@@ -51,8 +55,15 @@ export const Scene = ({
   const { current: camera } = useRef<THREE.PerspectiveCamera>(
     new THREE.PerspectiveCamera()
   );
-  // SpinCameraControls
-  const { current: controls } = useRef<SpinCameraControls>(new SpinCameraControls(camera));
+  // OrbitControls
+  const { current: controls } = useRef<OrbitControls>(new OrbitControls(camera));
+
+  // GLTFSuspendableLoader
+  const [loader] = useState(() => {
+    const _gltfLoader = new GLTFSuspendableLoader();
+    _gltfLoader.setDracoPath(DRACO_DECODER_PATH);
+    return _gltfLoader;
+  });
 
   // ライト
   const [light] = useState(() => {
@@ -112,7 +123,7 @@ export const Scene = ({
 
   useEffect(() => {
     const handleChange = () => {
-      console.log("camera position/rotation", camera.position.clone(), camera.rotation.clone());
+      console.log("camera position/rotation/scene", camera.position.clone(), camera.rotation.clone(), scene);
     }
     controls.addEventListener("change", handleChange);
     return () => {
@@ -127,6 +138,7 @@ export const Scene = ({
       renderer: rendererRef.current,
       controls,
       camera,
+      loader,
     };
   }, [camera, controls, scene]);
 
