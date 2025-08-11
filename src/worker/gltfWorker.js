@@ -58,74 +58,25 @@ self.onmessage = async (event) => {
     loader.load(
     url,
     async (gltf) => {
-        let mesh
-      gltf.scene.traverse((child) => {
-        if (child.isMesh) {
-          mesh =  child;
-        }
-      });
-      if (!mesh) {
-        self.postMessage({ type: 'error', error: 'メッシュがありません' });
-        return;
-      }
+        const nodes = serializeScene(gltf.scene);
 
-      // ジオメトリの属性を取得
-      const geometry = mesh.geometry;
-      const positionAttr = geometry.getAttribute('position');
-      const normalAttr = geometry.getAttribute('normal');
-      const uvAttr = geometry.getAttribute('uv');
-
-      // マテリアル情報
-      const material = mesh.material;
-      const materialData = {
-        color: material.color.toArray(),
-        metalness: material.metalness,
-        roughness: material.roughness,
-        // ここではテクスチャ有無だけ判定しておく
-        hasMap: !!material.map,
-      };
-
-      // テクスチャ画像データを ArrayBuffer に変換するユーティリティ
-      async function imageToArrayBuffer(texture) {
-        if (!texture || !texture.image) return null;
-
-        // texture.image は HTMLImageElement など
-        // OffscreenCanvas を使ってBlobに変換してからArrayBuffer化
-        const img = texture.image;
-
-        // OffscreenCanvas作成
-        const canvas = new OffscreenCanvas(img.width, img.height);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        // Blobを取得しArrayBufferに変換
-        const blob = await canvas.convertToBlob();
-        return await blob.arrayBuffer();
-      }
-
-      const mapArrayBuffer = material.map ? await imageToArrayBuffer(material.map) : null;
-
-      // 転送データをまとめる
-      const buffers = {
-        position: positionAttr.array.buffer,
-        normal: normalAttr?.array.buffer,
-        uv: uvAttr?.array.buffer,
-      };
-
-      // postMessage で transferable として渡す配列を作成
-      const transferList = Object.values(buffers).filter(b => b !== undefined);
-      if (mapArrayBuffer) transferList.push(mapArrayBuffer);
-
-      self.postMessage(
-        {
-          type: 'success',
-          buffers,
-          materialData,
-          mapArrayBuffer,
-          vertexCount: positionAttr.count,
-        },
-        transferList
-      );
+        // バッファをまとめる
+        const buffers = [];
+        nodes.forEach(node => {
+            if (node.geometry) {
+            buffers.push(node.geometry.position);
+            if (node.geometry.normal) buffers.push(node.geometry.normal);
+            if (node.geometry.uv) buffers.push(node.geometry.uv);
+            }
+        });
+    
+        self.postMessage(
+            {
+            type: 'success',
+            nodes
+            },
+            buffers
+        );
     },
     (progress) => {
       self.postMessage({ type: 'progress', loaded: progress.loaded, total: progress.total });
