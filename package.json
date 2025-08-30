@@ -1,8 +1,8 @@
 {
-  "name": "three-spin-camera-controls",
+  "name": "gltf-suspendable-loader",
   "private": true,
   "version": "0.1.0",
-  "description": "Controls for rotating Three.js camera around its own axis.",
+  "description": "A suspendable loader for GLTF models.",
   "type": "module",
   "scripts": {
     "dev": "vite",
