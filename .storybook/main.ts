@@ -13,5 +13,9 @@ const config: StorybookConfig = {
     name: "@storybook/react-vite",
     options: {},
   },
+  viteFinal: async (config) => {
+    config.base = '/gltf-suspendable-loader/';
+    return config;
+  },
 };
 export default config;
