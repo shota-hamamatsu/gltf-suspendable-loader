@@ -4,7 +4,7 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/gltf-suspendable-loader/',
+  base: '',
   build: {
     target: 'esnext',
     lib: {
