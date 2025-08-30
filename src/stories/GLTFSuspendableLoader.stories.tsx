@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Scene } from "./context/Scene";
 import { GLTFObject } from "./components/GLTFObject";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Subject } from "rxjs";
+import { Button } from "@mui/material";
 
 const DEFAULT_GLTF_PATH = new URL('./assets/glb/LittlestTokyo.glb', import.meta.url).href;
 
@@ -17,11 +18,14 @@ type Story = StoryObj<typeof Scene>;
 export const Test: Story = {
   render: () => {
     const [gltfPath, setGLTFPath] = useState<string>(DEFAULT_GLTF_PATH);
-    const [subject, setSubject] = useState<Subject<unknown>>();
+    const subjectRef = useRef<Subject<unknown>>();
     return (
-      <div style={{ width: '100%', height: "100%" }}>
+      <div style={{ width: '100%', height: "100%", position: 'relative' }}>
         <Scene>
-          <GLTFObject url={gltfPath} setSubject={setSubject} />
+          <Button onClick={() => subjectRef.current?.unsubscribe()} style={{ position: 'absolute', zIndex: 1, top: 10, left: 10 }}>
+            Load Stop
+          </Button>
+          <GLTFObject url={gltfPath} setSubject={(subject) => subjectRef.current = subject} />
         </Scene>
       </div>
     );

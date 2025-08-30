@@ -67,7 +67,7 @@ export const Scene = ({
 
   // ライト
   const [light] = useState(() => {
-    const light = new THREE.AmbientLight(0xffaaff);
+    const light = new THREE.AmbientLight();
     light.position.set(10, 10, 10);
     return light;
   });
@@ -90,7 +90,9 @@ export const Scene = ({
       antialias: true,
       alpha: true,
       depth: true,
+
     });
+    rendererRef.current.outputColorSpace = THREE.SRGBColorSpace;
     rendererRef.current.setSize(window.innerWidth, window.innerHeight);
     // 背景色
     rendererRef.current.setClearColor(0xeeeeee);
@@ -104,6 +106,7 @@ export const Scene = ({
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     controls.connect(canvasRef.current);
+    controls.update();
     // ライト追加
     scene.add(light);
     scene.add(axisHelper);

@@ -15,9 +15,10 @@ const textureMap = new Map();
 async function createTextureFromBuffer(buffer: ArrayBuffer) {
     if (!buffer) return null;
     const blob = new Blob([buffer]);
-    const imageBitmap = await createImageBitmap(blob);
+    const imageBitmap = await createImageBitmap(blob, { premultiplyAlpha: 'none', });
     const texture = new THREE.Texture(imageBitmap);
     texture.needsUpdate = true;
+    texture.colorSpace = THREE.SRGBColorSpace;
     return texture;
 }
 

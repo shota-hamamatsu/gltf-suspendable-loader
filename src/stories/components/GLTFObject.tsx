@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useSceneContext } from "../context/Scene";
 import { Subject } from "rxjs";
-import GUI from "lil-gui";
 
 export type GLTFObjectProps = {
   url: string;
@@ -21,6 +20,7 @@ export const GLTFObject = ({ url, setSubject }: GLTFObjectProps): JSX.Element | 
       console.log("GLTF loaded:", gltf);
       scene.add(gltf);
     });
+    console.log("GLTFObject mounted", subjectRef.current);
     setSubject?.(subjectRef.current);
     return () => {
       subjectRef.current?.unsubscribe();
