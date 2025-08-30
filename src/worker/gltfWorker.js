@@ -36,7 +36,7 @@ async function serializeNode(node) {
         normal: geom.getAttribute('normal')?.array.buffer,
         uv: geom.getAttribute('uv')?.array.buffer,
         indexType: (geom.index.array instanceof Uint32Array) ? 'Uint32' : 'Uint16',
-        index: geom.index ? geom.index.array.buffer : null,  // 追加
+        index: geom.index ? geom.index.array.buffer : null,
         vertexCount: geom.getAttribute('position').count,
         indexCount: geom.index ? geom.index.count : 0,
     };
