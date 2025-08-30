@@ -4,8 +4,7 @@
  * @license MIT
  */
 
-import { Observable, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import * as THREE from 'three';
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -99,10 +98,8 @@ export class GLTFSuspendableLoader extends GLTFLoader {
         onLoad: (model: THREE.Object3D) => void
     ) {
         // 中断用のSubject
-        const cancelSubject = new Subject();
+        const worker = new Worker(new URL('./worker/gltfWorker.js', import.meta.url), { type: 'module' });
         const modelLoader = new Observable<{ progress?: number; model?: THREE.Object3D }>((observer) => {
-            const worker = new Worker(new URL('./worker/gltfWorker.js', import.meta.url), { type: 'module' });
-
             worker.onmessage = async (event) => {
                 const { type, ...data } = event.data;
 
@@ -135,9 +132,7 @@ export class GLTFSuspendableLoader extends GLTFLoader {
             return () => {
                 worker.terminate();
             };
-        }).pipe(
-            takeUntil(cancelSubject)
-        );
+        })
 
         modelLoader.subscribe({
             next: (data) => {
@@ -156,6 +151,11 @@ export class GLTFSuspendableLoader extends GLTFLoader {
             }
         });
 
-        return cancelSubject;
+        const abortFunc = () => {
+            worker.terminate();
+            console.log('loading aborted');
+        }
+
+        return abortFunc;
     }
 }
