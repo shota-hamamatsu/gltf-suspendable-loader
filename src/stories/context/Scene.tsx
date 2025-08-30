@@ -11,7 +11,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFSuspendableLoader } from "../../GLTFSuspendableLoader";
 
-const DRACO_DECODER_PATH = new URL('../assets/draco/', import.meta.url).href;
+const DRACO_DECODER_PATH = new URL('../assets/draco', import.meta.url).href;
 
 const DEFAULT_CAMERA_POSITION: THREE.Vector3 = new THREE.Vector3(0, 400, 800);
 const DEFAULT_CAMERA_ROTATION: THREE.Euler = new THREE.Euler(
