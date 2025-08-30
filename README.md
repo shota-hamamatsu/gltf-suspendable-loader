@@ -1,4 +1,5 @@
 ## GLTFSuspendableLoader
+- workerで解析することで、解析中も処理が中断できる。
 
 ## Demo
 
