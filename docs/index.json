@@ -1,1 +1,1 @@
-{"v":5,"entries":{"spincameracontrols--test":{"type":"story","id":"spincameracontrols--test","name":"Test","title":"SpinCameraControls","importPath":"./src/stories/SpinCameraControls.stories.tsx","componentPath":"./src/stories/context/Scene.tsx","tags":["dev","test"]}}}
+{"v":5,"entries":{"gltfsuspendableloader--test":{"type":"story","id":"gltfsuspendableloader--test","name":"Test","title":"GLTFSuspendableLoader","importPath":"./src/stories/GLTFSuspendableLoader.stories.tsx","componentPath":"./src/stories/context/Scene.tsx","tags":["dev","test"]}}}
