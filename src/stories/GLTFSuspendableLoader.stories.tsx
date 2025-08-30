@@ -4,7 +4,7 @@ import { GLTFObject } from "./components/GLTFObject";
 import { useRef, useState } from "react";
 import { Button } from "@mui/material";
 
-const DEFAULT_GLTF_PATH = new URL('/public/assets/glb/LittlestTokyo.glb', import.meta.url).href;
+const DEFAULT_GLTF_PATH = new URL('/assets/glb/LittlestTokyo.glb', import.meta.url).href;
 
 const meta = {
   title: "GLTFSuspendableLoader",
