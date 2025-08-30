@@ -10,9 +10,8 @@ import {
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFSuspendableLoader } from "../../GLTFSuspendableLoader";
-import { REPO_NAME } from "../../constant/constant";
 
-const DRACO_DECODER_PATH = `${REPO_NAME}/assets/draco`;
+const DRACO_DECODER_PATH = `/assets/draco`;
 
 const DEFAULT_CAMERA_POSITION: THREE.Vector3 = new THREE.Vector3(0, 400, 800);
 const DEFAULT_CAMERA_ROTATION: THREE.Euler = new THREE.Euler(
