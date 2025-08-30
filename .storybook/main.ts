@@ -14,7 +14,7 @@ const config: StorybookConfig = {
     options: {},
   },
   viteFinal: async (config) => {
-    config.base = '/GLTFSuspendableLoader/';
+    config.base = '/gltf-suspendable-loader/';
     return config;
   },
 };
