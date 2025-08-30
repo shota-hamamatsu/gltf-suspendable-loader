@@ -3,8 +3,9 @@ import { Scene } from "./context/Scene";
 import { GLTFObject } from "./components/GLTFObject";
 import { useRef, useState } from "react";
 import { Button } from "@mui/material";
+import { REPO_NAME } from "../constant/constant";
 
-const DEFAULT_GLTF_PATH = '/assets/glb/LittlestTokyo.glb';
+const DEFAULT_GLTF_PATH = `${REPO_NAME}/assets/glb/LittlestTokyo.glb`;
 
 const meta = {
   title: "GLTFSuspendableLoader",
