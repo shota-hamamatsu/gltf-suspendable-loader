@@ -75,5 +75,8 @@
   "bugs": {
     "url": "https://github.com/shota-hamamatsu/gltf-suspendable-loader/issues"
   },
-  "homepage": "https://github.com/shota-hamamatsu/gltf-suspendable-loader#readme"
+  "homepage": "https://github.com/shota-hamamatsu/gltf-suspendable-loader#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  }
 }
