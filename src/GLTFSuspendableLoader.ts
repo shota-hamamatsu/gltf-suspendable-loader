@@ -21,6 +21,7 @@ async function createTextureFromBuffer(buffer: ArrayBuffer) {
     return texture;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function deserializeNode(nodeData: any) {
     let obj;
     if (nodeData.type === 'Mesh' && nodeData.geometry) {
@@ -95,7 +96,9 @@ export class GLTFSuspendableLoader extends GLTFLoader {
     }
     loadSuspendable(
         url: string,
-        onLoad: (model: THREE.Object3D) => void
+        onLoad: (model: THREE.Object3D) => void,
+        onProgress?: (progress: number) => void,
+        onError?: (error: Error) => void
     ) {
         // 中断用のSubject
         const worker = new Worker(new URL('./worker/gltfWorker.js', import.meta.url), { type: 'module' });
@@ -137,23 +140,25 @@ export class GLTFSuspendableLoader extends GLTFLoader {
         modelLoader.subscribe({
             next: (data) => {
                 if (data.model) {
-                    console.log('モデル読み込み成功:', data.model);
+                    // console.log('モデル読み込み成功:', data.model);
                     onLoad(data.model);
                 } else {
-                    console.log('進捗:', (data?.progress ?? 0) * 100, '%');
+                    // console.log('進捗:', (data?.progress ?? 0) * 100, '%');
+                    onProgress?.(data?.progress ?? 0);
                 }
             },
             error: (error) => {
-                console.error('エラー発生:', error);
+                // console.error('エラー発生:', error);
+                onError?.(error);
             },
             complete: () => {
-                console.log('読み込み完了');
+                // console.log('読み込み完了');
             }
         });
 
         const abortFunc = () => {
             worker.terminate();
-            console.log('loading aborted');
+            // console.log('loading aborted');
         }
 
         return abortFunc;
